@@ -30,4 +30,14 @@ public class Servo_settings {
         }
         lasButtonPres = buttonPressed;
     }
+
+    public void rotateBucket(boolean buttonPressed, double openPos) {
+        if (buttonPressed && !lasButtonPres) {
+            isClawOpen = !isClawOpen;
+            myservo.setPosition(isClawOpen ? openPos : startingServoPos);
+            telemetry.addData("buttonPressed", buttonPressed);
+            telemetry.update();
+        }
+        lasButtonPres = buttonPressed;
+    }
 }
