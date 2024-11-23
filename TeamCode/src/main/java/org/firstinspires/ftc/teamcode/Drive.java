@@ -5,16 +5,14 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 @TeleOp (name = "Drive")
-
-
-
 public class Drive extends OpMode {
     Driver_setting driver = new Driver_setting();
+    Servo_settings servo = new Servo_settings();
 
     @Override
     public void init() {
         driver.init(hardwareMap);
-
+        servo.init("qw",hardwareMap,0.5);
     }
 
     @Override
