@@ -12,23 +12,21 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 @TeleOp (name = "Drive")
 public class Drive extends OpMode {
     Driver_setting driver = new Driver_setting();
+    SlideControl slides = new SlideControl(50,30,0.01,0.1,0.0,0.0);
     Servo_settings servo = new Servo_settings();
     Servo_settings servoBucket = new Servo_settings();
 
     @Override
     public void init() {
         driver.init(hardwareMap);
-        servo.init("armServo",hardwareMap, telemetry, 0.7);
-        servoBucket.init("slideServo",hardwareMap,telemetry,0.1);
+        slides.init(hardwareMap);
     }
 
     @Override
     public void loop() {
         //wait();
         driver.moveRobot(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        servo.openClaw(gamepad2.left_bumper,0.4);
-        servoBucket.rotateBucket(gamepad2.right_bumper,0.8);
-        driver.moveArm(gamepad2.a, gamepad2.y,43,telemetry);
-        driver.moveSlides(gamepad2.dpad_up, gamepad2.dpad_down, 5, telemetry);
+        slides.moveHSlides(gamepad1.dpad_right, gamepad1.dpad_left, 0.8);
+        slides.moveVSlide(gamepad1.dpad_up, gamepad1.dpad_down, 0.8);
     }
 }
