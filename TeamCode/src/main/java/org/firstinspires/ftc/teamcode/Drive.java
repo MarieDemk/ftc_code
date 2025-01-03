@@ -2,31 +2,52 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.Gamepad;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
-
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 @TeleOp (name = "Drive")
 public class Drive extends OpMode {
+    public Telemetry Telemetry;
     Driver_setting driver = new Driver_setting();
-    SlideControl slides = new SlideControl(50,30,0.01,0.1,0.0,0.0);
-    Servo_settings servo = new Servo_settings();
-    Servo_settings servoBucket = new Servo_settings();
+
+    SlideControl slides = new SlideControl(300,0,0.01,0.1,0.0,0.0);
+    Intake_settings intake = new Intake_settings();
 
     @Override
     public void init() {
         driver.init(hardwareMap);
-        slides.init(hardwareMap);
+        slides.init(hardwareMap, telemetry);
+        intake.init(":LefttServo", "rightServo", "clawServo","armServo", "assembPuller", "motor_botLeft", hardwareMap, 0.0);
     }
 
     @Override
     public void loop() {
         //wait();
         driver.moveRobot(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        slides.moveHSlides(gamepad1.dpad_right, gamepad1.dpad_left, 0.8);
-        slides.moveVSlide(gamepad1.dpad_up, gamepad1.dpad_down, 0.8);
+        if (gamepad2.dpad_right) {
+            intake.rotateIntakeAssembly(0.5);
+            slides.moveVSlideAuto(300, telemetry);
+            slides.moveHSlides(gamepad2.dpad_right, gamepad2.dpad_left, 0.8, telemetry);
+            intake.pullOutIntake();
+        }
+        if (gamepad2.dpad_left) {
+            intake.pullBackIntake();
+            intake.rotateIntakeAssembly(0);
+            slides.moveVSlideAuto(300, telemetry);
+            slides.moveHSlides(gamepad2.dpad_right, gamepad2.dpad_left, 0.8, telemetry);
+            intake.autoSurgSpin();
+        }
+        if (gamepad2.dpad_up) {
+            slides.moveVSlide(gamepad2.dpad_up, gamepad2.dpad_down, 0.8, telemetry);
+            intake.clawRotateUp();
+        }
+        if (gamepad2.dpad_down) {
+            slides.moveVSlide(gamepad2.dpad_up, gamepad2.dpad_down, 0.8, telemetry);
+            intake.clawRotateDown();
+        }
+        intake.clawrelease(gamepad2.b);
+        intake.backwardsRotategSurg(gamepad2.y, 0.8);
+        intake.rotateSurgTubing(gamepad2.x,0.8);
+
+
     }
 }
