@@ -18,7 +18,7 @@ public class SlideControl {
     public DcMotorEx hMotor;
     public int minPos = 0;
     public int maxPos = 0;
-    double safety_distance = 50;
+    double safety_distance = 5;
 
     public SlideControl(int maxPos, int minPos, double kP, double kI, double kD, double kF) {
         this.minPos = minPos;
@@ -41,9 +41,13 @@ public class SlideControl {
         }
 
         try {
-            hMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+            hMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            leftVSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+            rightVSlideMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
             leftVSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
             rightVSlideMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+            hMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
             hMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
             rightVSlideMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -86,25 +90,32 @@ public class SlideControl {
         telemetry.update();
     }
 
-    public void moveVSlide(boolean dPadUp, boolean dPadDown, double power , Telemetry telemetry) {
+    public void moveVSlide(boolean dPadUp, boolean dPadDown, double power, Telemetry telemetry) {
         double currentPosR = rightVSlideMotor.getCurrentPosition();
         double currentPosL = leftVSlideMotor.getCurrentPosition();
 
         telemetry.addData("Right V Slide Position", currentPosR);
         telemetry.addData("Left V Slide Position", currentPosL);
 
-        if (dPadUp && currentPosR < maxPos - safety_distance && currentPosL < maxPos - safety_distance) {
-            rightVSlideMotor.setPower(power);
+        // Move up if dPadUp is pressed and both motors are within the safe range
+        if (dPadUp && currentPosR < maxPos && currentPosL < maxPos) {
+            rightVSlideMotor.setPower(-power);
             leftVSlideMotor.setPower(power);
-            telemetry.addData("Vertical Slide Status", "Moving");
-        } else if (dPadDown){
+            telemetry.addData("Vertical Slide Status", "Moving Up");
+        }
+        // Move down if dPadDown is pressed
+        else if (dPadDown && -currentPosR > minPos && currentPosL > minPos) {
             rightVSlideMotor.setPower(power);
             leftVSlideMotor.setPower(-power);
-        }else {
+            telemetry.addData("Vertical Slide Status", "Moving Down");
+        }
+        // Stop the slides if neither button is pressed
+        else {
             rightVSlideMotor.setPower(0);
             leftVSlideMotor.setPower(0);
             telemetry.addData("Vertical Slide Status", "Stopped");
         }
+
         telemetry.update();
     }
 

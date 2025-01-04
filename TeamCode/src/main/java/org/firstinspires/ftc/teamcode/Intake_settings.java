@@ -18,8 +18,10 @@ public class Intake_settings {
     public Servo intakeAssembPuller;
     public DcMotorEx surgSpinner;
     boolean isMoving = false;
+    private boolean isIntakeBack = false; // Track state
     public double startingServoPos;
-
+    private ElapsedTime intakeTimer = new ElapsedTime(); // Make the timer persistent
+    private boolean isIntakeOut = false;
     public boolean isTargetPos = false;
     private Telemetry telemetry; // Instance-specific telemetry
 
@@ -35,7 +37,7 @@ public class Intake_settings {
         intakePuller_L.setPosition(startingPos);
     }
 
-    public void rotateIntakeAssembly(double targetPos) {
+    public void movePulleyToTarget(double targetPos) {
         // Ensure startingServoPos is initialized correctly
         if (startingServoPos < 0.0 || startingServoPos > 1.0) {
             startingServoPos = 0.0; // Default starting position
@@ -43,17 +45,11 @@ public class Intake_settings {
 
         // Check if the servo is ready to move
         if (!isMoving) {
-            // Toggle the target position
-            isTargetPos = !isTargetPos;
+            // Set the target position
+            double clampedTargetPos = Math.min(1.0, Math.max(0.0, targetPos));
 
-            // Calculate the new target position based on the toggle
-            double newTargetPos = isTargetPos ? targetPos : startingServoPos;
-
-            // Clamp the position to a valid range (0.0 to 1.0)
-            newTargetPos = Math.min(1.0, Math.max(0.0, newTargetPos));
-
-            // Set the servo to the new target position
-            intakePuller_L.setPosition(newTargetPos);
+            // Move the servo to the target position
+            intakePuller_L.setPosition(clampedTargetPos);
 
             // Mark the servo as moving
             isMoving = true;
@@ -62,8 +58,39 @@ public class Intake_settings {
         // Check if the servo has reached its target position
         if (isMoving) {
             double currentPosition = intakePuller_L.getPosition();
-            double expectedPosition = isTargetPos ? targetPos : startingServoPos;
-            double positionDifference = Math.abs(currentPosition - expectedPosition);
+            double positionDifference = Math.abs(currentPosition - targetPos);
+
+            // If the position is within a small margin, mark it as stopped
+            if (positionDifference < 0.01) {
+                isMoving = false;
+            }
+        }
+    }
+
+    public void movePulleyToStart() {
+        // Ensure startingServoPos is initialized correctly
+        if (startingServoPos < 0.0 || startingServoPos > 1.0) {
+            startingServoPos = 0.0; // Default starting position
+        }
+
+        // Check if the servo is ready to move
+        if (!isMoving) {
+            // Move the servo to the starting position
+            intakePuller_L.setPosition(startingServoPos);
+
+            // Mark the servo as moving
+            isMoving = true;
+        }
+
+        // Check if the servo has reached the starting position
+        if (isMoving) {
+            double currentPosition = intakePuller_L.getPosition();
+            double positionDifference = Math.abs(currentPosition - startingServoPos);
+
+            // If the position is within a small margin, mark it as stopped
+            if (positionDifference < 0.01) {
+                isMoving = false;
+            }
         }
     }
 
@@ -74,31 +101,43 @@ public class Intake_settings {
             surgSpinner.setPower(0);
     }
 
-    public void pullBackIntake(){
-        ElapsedTime timer = new ElapsedTime();
-        timer.reset();
 
-        if(timer.seconds() < 3){
-            intakeAssembPuller.setPosition(-0.5);
+
+    public void pullBackIntake() {
+        if (!isIntakeBack) {
+            intakeTimer.reset();
+            isIntakeBack = true;
         }
-        intakeAssembPuller.setPosition(0);
+        while (true) {
+            if (intakeTimer.seconds() < 3) {
+                intakeAssembPuller.setPosition(0); // Pull back for 3 seconds
+            } else {
+                intakeAssembPuller.setPosition(0.5); // Reset position after 3 seconds
+                isIntakeBack = false; // Reset state for next usage
+                break;
+            }
+        }
     }
 
-    public void pullOutIntake(){
-        ElapsedTime timer = new ElapsedTime();
-        timer.reset();
-
-        if(timer.seconds() < 2.5){
-            intakeAssembPuller.setPosition(0.5);
+    public void pullOutIntake() {
+        if (!isIntakeOut) {
+            intakeTimer.reset();
+            isIntakeOut = true;
         }
-        intakeAssembPuller.setPosition(0);
+
+        if (intakeTimer.seconds() < 3) {
+            intakeAssembPuller.setPosition(1); // Keep pulling for 7 seconds
+        } else {
+            intakeAssembPuller.setPosition(0.5); // Reset position after 7 seconds
+            isIntakeOut = false; // Reset state for next usage
+        }
     }
 
     public void autoSurgSpin(){
         ElapsedTime timer = new ElapsedTime();
         timer.reset();
 
-        if(timer.seconds() < 3){
+        if(timer.seconds() < 7){
             surgSpinner.setPower(0.9);
             sleep(1000);
             clawServ.setPosition(0.2);
@@ -115,14 +154,19 @@ public class Intake_settings {
 
     public void clawRotateUp(){
         clawRotateR.setPosition(1);
-        clawRotateL.setPosition(1);
+        clawRotateL.setPosition(0.05);
     }
 
     public void clawRotateDown(){
-        clawRotateR.setPosition(0.3);
+        clawRotateR.setPosition(0.75);
         clawRotateL.setPosition(0.3);
     }
 
+    public void clawgrab(boolean dpad) {
+        if (dpad) {
+            clawServ.setPosition(0.4);
+        }
+    }
     public void clawrelease(boolean dpad){
         if(dpad){
             clawServ.setPosition(0);
